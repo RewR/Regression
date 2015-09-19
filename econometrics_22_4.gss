@@ -1,0 +1,165 @@
+library optmum, pgraph; optset; graphset;
+
+@!!!!!!!!!!!!!!!!!!!!!!!!!@
+@ Loading the data set @
+
+load data[45,3] = "C:/Users/rewatkhanal/Desktop/data22_4.txt";
+Q=data[.,1];
+p=data[.,2];
+s=data[.,3];
+
+
+@!!!!!!!!!!!!!!!!!!!!!!!!!@
+
+@ Initializing global variables @
+
+beta=zeros(3,1); lambda=0;
+
+
+@!!!!!!!!!!!!!!!!!!!!!!!!!@
+
+@ xi - Parameters over which NLS is performed
+  Note optimization will be done by choosing values for xi and not beta and
+  lambda @
+
+
+@ The optimization command @
+
+{xi,ssqS,grad,retcode} = optmum(&ssqfunc,start());
+
+
+@!!!!!!!!!!!!!!!!!!!!!!!!!@
+
+@ Writing the output @
+
+
+@ Recovering our parameters of interest by inverse transformation @
+
+beta[1]=xi[1];
+beta[3]=xi[3];
+lambda =xi[4];
+
+beta[2]=-exp(xi[2]);
+
+
+output file = "C:/Users/rewatkhanal/Desktop/NLS.out" reset; output on;
+
+"Minimized sum of squares=";; ssqS;
+
+"beta = "; beta;
+"lambda = "; lambda;
+
+output off;
+
+
+@!!!!!!!!!!!!!!!!!!!!!!!!!@
+@ Calculating standard errors @
+
+call se(xi);
+
+
+@!!!!!!!!!!!!!!!!!!!!!!!!!@
+proc start();
+local theta;
+
+
+@ Assume beta[2]<0; @
+
+@ Providing starting values - chosen 'somehow'
+  One could use the method of moments here to select starting values @
+
+beta[1]=784;
+beta[2]=-2.32;   @ Note negative value chosen for quantity-price coefficient @
+beta[3]=1.02;
+lambda =0.8;
+
+
+@ Theta values are chosen as the starting values for xi, the parameters
+  over which optimization is performed @
+
+theta=zeros(4,1);
+
+theta[1]=beta[1];
+theta[3]=beta[3];
+theta[4]=lambda;
+
+@ Algebraic transformation to ensure beta[2]<0 @
+theta[2]=ln(-beta[2]);
+
+
+retp(theta); endp;
+
+@!!!!!!!!!!!!!!!!!!!!!!!!!@
+
+@!!!!!!!!!!!!!!!!!!!!!!!!!@
+@ Procedure to evaluate the sum of squares - the criterion function
+  that is to be minimized @
+
+proc ssqfunc(xi);
+local eY,i,ssqs,temp;
+
+
+@ Re-transform to obtain the beta's and lambda @
+
+beta[1]=xi[1];
+beta[3]=xi[3];
+lambda =xi[4];
+
+beta[2]=-exp(xi[2]);
+
+
+@ Calculating the sum of squares @
+
+eY=zeros(rows(data),1);
+
+i=1; do while i<=rows(eY);
+
+temp = q[i] - beta[1] - beta[2]*(p[i]^lambda-1)/lambda;
+eY[i] = ( temp - beta[3]*(s[i]^lambda-1)/lambda )^2;
+
+i=i+1; endo;
+
+ssqS = sumc(eY);
+
+
+retp(ssqs); endp;
+
+
+@!!!!!!!!!!!!!!!!!!!!!!!!!@
+@ Calculating standard errors @
+
+proc se(xi);
+local i,info,se,temp,sgmsq;
+
+sgmsq=ssqfunc(xi)/rows(data);
+
+
+optset;
+info=gradcd(&se1,xi);
+
+info=invswp(info); se=sqrt(2*sgmsq*diag(info));
+
+
+output file = "C:/Users/rewatkhanal/Desktop/NLS1.out"; output on;
+
+"se of beta[1] = "; se[1];
+"se of beta[3] = "; se[3];
+"se of lambda  = "; se[4];
+
+@ standard error of beta[2] with the Delta method @
+"se of beta[2] = "; exp(xi[2])*se[2];
+
+        output off;
+
+
+retp(info); endp;
+
+
+
+proc se1(xi);
+local info;
+
+info=gradcd(&ssqfunc,xi);
+
+retp(info'); endp;
+
