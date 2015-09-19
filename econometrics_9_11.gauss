@@ -1,0 +1,86 @@
+new;
+library pgraph; graphset;
+
+/*
+
+// If we have to enter data from the keyboard interactively the following lines would serve the purpose //    
+ y={1,-1,2,0,4,2,2,0,2};
+ x1={1,-1,1,0,1,0,0,1,0};
+ x3={-1,0,0,0,0,0,1,1,1};
+ X=x1~x2~x3;
+
+ // Had we now known the length and number of fields of the data we would have done it as follows. //
+   
+ load data[ ]="C:/Users/HAMBISA/Dropbox/__ECO 7425 Econometrics II/__hw/HW1/hw1d.txt";
+  data1=reshape(data,9,4); 
+    
+ // Load data and reshape it to original form as follows //
+    
+ y=data1[.,1];
+ x1=data1[.,2];
+ x2=data1[.,3];
+ x3=data1[.,4];
+ X=x1~x2~x3;
+ 
+*/
+
+// but we load the data as follows to get the job done //
+
+load data[9,4]="C:/Users/rewatkhanal/Desktop/Hambisa/hw1d.txt";
+
+//  Extract colums from data to form y and x variables.  //
+
+y=data[.,1];
+x1=data[.,2];
+x2=data[.,3];
+x3=data[.,4];
+X=x1~x2~x3;
+
+// save hw1data = y, x1, x2, x3; //
+
+
+// compute the matrices, nonconstant regression as follows  //
+diagonalmatrix=X'*X; // X transpose times X
+factor=X'*y; // X transpose times y
+inverseofdiagonalmatrix=inv(X'*X); // inverse of the diagonal matrix X' times X
+b=inv(X'*X)*(X'*y);  // similar to  ols regression without constant
+yhat=X*b; // X matrix times the betas for b1, b2, and b3
+ehat=y-yhat;  // error term is the difference between y and yhat
+sse=ehat'*ehat; 
+sigmahatsqr=sse/(rows(y)-cols(X));
+covariance=sigmahatsqr*inv(X'*X);
+sigmahat=sqrt(sigmahatsqr);
+stderr=sigmahat*sqrt(inv(X'*X));
+seb1=stderr[1,1];
+seb2=stderr[2,2];
+seb3=stderr[3,3];
+r2= (yhat'*yhat)/(y'*y); 
+// r2=(1-(sse/(y'*y))); this also works
+
+// Define independent variables and extract standard errors for each beta //
+
+output file= "C:/Users/rewatkhanal/Desktop/Hambisa/hw1.out" reset; 
+output on;
+format /rd 2,0;
+
+"";
+"    OLS Results from Gauss OLS Formula";"";
+"            REGRESSION WITHOUT CONSTANT";"";
+"a.";"";
+"  Elements in y is:";"";;y;;";";"";
+"  Elements in X is:";"";;X;;".";"";
+"b.";"";
+"(i)";"";
+"  X'X is:";;"";diagonalmatrix;;";";"";
+"  X'y is:";;"";factor;;";";"";
+
+format /rd 10,7;
+"  Inverse of diagnal matrix is:";;"";inverseofdiagonalmatrix;;".";"";
+"(ii)  Least square estimator is:";;"";b;;".";"";
+"(iii) Least square residual voctor is:";;"";ehat;;".";"";
+"(iv)  Variance estimate is";;sigmahatsqr;;".";;"";"";
+"(v)   Estimator of covariance matrix is";;"";covariance;;".";"";
+"(vi)  Standard error for each b1, b2 and b3 is";
+          ;seb1;;",";;seb2;;",";;seb3;;",respectively.";"";
+"(vii) Coefficient of determination is";;r2;;".";"";
+end;
